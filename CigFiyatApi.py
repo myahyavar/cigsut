@@ -1,6 +1,9 @@
 from fastapi import FastAPI, Request
 import pandas as pd
 import numpy as np
+import uuid
+import psycopg2
+import json
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from prophet import Prophet
 from sklearn.preprocessing import MinMaxScaler
@@ -9,6 +12,14 @@ from keras.layers import Dense, LSTM
 from sklearn.linear_model import Ridge
 
 app = FastAPI()
+
+# PostgreSQL connection details
+DB_PARAMS = {
+    "dbname": "cigsutarztalepdb",
+    "user": "cigsutarztalep",
+    "password": "C!g$ut@rz.2025**",
+    "host": "/var/run/postgresql"
+}
 
 @app.post("/forecast_fiyat")
 async def forecast_price(request: Request):
@@ -91,4 +102,31 @@ async def forecast_price(request: Request):
     ridge.fit(ensemble_X, ensemble_X.mean(axis=1))
     ensemble_forecast = pd.Series(ridge.predict(ensemble_X), index=forecast_index)
 
-    return {"forecast_price": ensemble_forecast.to_dict()}
+    # return {"forecast_price": ensemble_forecast.to_dict()}
+    
+    result_dict = ensemble_forecast.to_dict()
+    result_id = str(uuid.uuid4())
+
+    # Save to PostgreSQL
+    conn = psycopg2.connect(**DB_PARAMS)
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO cigsut_schema.forecast_fiyat (id, results) VALUES (%s, %s)",
+        (result_id, json.dumps(result_dict))
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return {"result_id": result_id}
+
+@app.get("/get_result_fiyat/{result_id}")
+async def get_result(result_id: str):
+    conn = psycopg2.connect(**DB_PARAMS)
+    cur = conn.cursor()
+    cur.execute("SELECT results FROM cigsut_schema.forecast_fiyat WHERE id = %s", (result_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return {row[0]} if row else {"error": "ID not found"}
+
