@@ -126,9 +126,10 @@ async def forecast(request: Request):
 
     # return {"forecast": bagging_forecast.to_dict()}
     
-    result_dict = bagging_forecast.to_dict()
+    # Convert Timestamp keys to string
+    result_dict = {"forecast": {str(k.date()): v for k, v in bagging_forecast.items()}}
     result_id = str(uuid.uuid4())
-
+    
     # Save to PostgreSQL
     conn = psycopg2.connect(**DB_PARAMS)
     cur = conn.cursor()
@@ -139,7 +140,7 @@ async def forecast(request: Request):
     conn.commit()
     cur.close()
     conn.close()
-
+    
     return {"result_id": result_id}
 
 @app.get("/get_result_arz/{result_id}")
