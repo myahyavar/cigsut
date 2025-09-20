@@ -129,5 +129,8 @@ async def get_result(result_id: str):
     row = cur.fetchone()
     cur.close()
     conn.close()
-    return json.loads(row[0]) if row else {"error": "ID not found"}
 
+    if row:
+        return row[0]  # results is already a dict (from JSONB column)
+    else:
+        return {"error": "ID not found"}
