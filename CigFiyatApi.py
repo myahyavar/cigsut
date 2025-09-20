@@ -105,7 +105,7 @@ async def forecast_price(request: Request):
     # return {"forecast_price": ensemble_forecast.to_dict()}
     
     # Convert Timestamp keys to string
-    result_dict = {"forecast_price": {str(k.date()): v for k, v in ensemble_forecast.items()}}
+    result_dict = {str(k.date()): v for k, v in ensemble_forecast.items()}
     result_id = str(uuid.uuid4())
     
     # Save to PostgreSQL
@@ -129,5 +129,5 @@ async def get_result(result_id: str):
     row = cur.fetchone()
     cur.close()
     conn.close()
-    return {row[0]} if row else {"error": "ID not found"}
+    return json.loads(row[0]) if row else {"error": "ID not found"}
 

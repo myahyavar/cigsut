@@ -126,8 +126,8 @@ async def forecast(request: Request):
 
     # return {"forecast": bagging_forecast.to_dict()}
     
-    # Convert Timestamp keys to string
-    result_dict = {"forecast": {str(k.date()): v for k, v in bagging_forecast.items()}}
+  # Convert Timestamp keys to string
+    result_dict = {str(k.date()): v for k, v in bagging_forecast.items()}
     result_id = str(uuid.uuid4())
     
     # Save to PostgreSQL
@@ -151,5 +151,5 @@ async def get_result(result_id: str):
     row = cur.fetchone()
     cur.close()
     conn.close()
-    return {"forecast": row[0]} if row else {"error": "ID not found"}
-
+    return json.loads(row[0]) if row else {"error": "ID not found"}
+  
